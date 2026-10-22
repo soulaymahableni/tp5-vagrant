@@ -1,0 +1,13 @@
+---
+- name: Lab Vagrant - Jenkins, Docker, Portainer et conteneur web (rôles du TP4)
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    docker_user: vagrant
+
+  roles:
+    - jenkins_install
+    - docker_portainer_install
+    - container_deployment

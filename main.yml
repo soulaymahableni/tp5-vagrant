@@ -1,0 +1,48 @@
+---
+- name: Vérifier si Java est déjà présent
+  ansible.builtin.stat:
+    path: /usr/bin/java
+  register: java_bin
+
+- name: Installer Java (prérequis de Jenkins)
+  ansible.builtin.apt:
+    name:
+      - fontconfig
+      - "{{ jenkins_java_package }}"
+    state: present
+    update_cache: true
+  when: not java_bin.stat.exists
+
+- name: Créer le dossier des clés apt
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Télécharger la clé du dépôt Jenkins
+  ansible.builtin.get_url:
+    url: "{{ jenkins_repo_url }}/jenkins.io-2026.key"
+    dest: "{{ jenkins_keyring }}"
+    mode: '0644'
+
+- name: Ajouter le dépôt Jenkins
+  ansible.builtin.apt_repository:
+    repo: "deb [signed-by={{ jenkins_keyring }}] {{ jenkins_repo_url }} binary/"
+    filename: jenkins
+    state: present
+
+- name: Installer Jenkins
+  ansible.builtin.apt:
+    name: jenkins
+    state: present
+
+- name: Jenkins démarré et activé au boot
+  ansible.builtin.service:
+    name: jenkins
+    state: started
+    enabled: true
+
+- name: Attendre que Jenkins écoute sur son port
+  ansible.builtin.wait_for:
+    port: "{{ jenkins_port }}"
+    timeout: 180
